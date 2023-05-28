@@ -22,7 +22,8 @@ namespace parser {
         ALTER,
         KLEENE,
         LETTER,
-        ANY
+        ANY,
+        EMPTY
     };
 
     struct node {
@@ -63,7 +64,7 @@ namespace parser {
         }
 
         node *parse(int l, int r) {
-            if (l >= r) return nullptr;
+            if (l >= r) return new node(node_t::EMPTY, '#', nullptr, nullptr);
             else if (l + 1 == r) {
                 if (t[l] == '.')
                     return new node(node_t::ANY, '#', nullptr, nullptr);
@@ -163,17 +164,17 @@ namespace dfa {
         }
         else if (v->t == parser::node_t::KLEENE) {
             res = __build_dfa(v->l);
-            
+
             for (int i = 0; i < 26; i++) {
                 set<node*> order(all(res->finish->edges[i]));
-                for(auto &j : res->start->edges[i])
+                for (auto &j : res->start->edges[i])
                     order.insert(j);
                 res->finish->edges[i].clear();
                 res->finish->edges[i].resize(order.size());
                 copy(order.begin(), order.end(), res->finish->edges[i].begin());
             }
             set<node*> order(all(res->finish->eps));
-            for(auto &j : res->start->eps)
+            for (auto &j : res->start->eps)
                 order.insert(j);
             res->finish->eps.clear();
             res->finish->eps.resize(order.size());
@@ -187,6 +188,8 @@ namespace dfa {
             for (int i = 0; i < 26; i++)
                 res->start->edges[i].push_back(res->finish);
         }
+        else if (v->t == parser::node_t::EMPTY)
+            res->start->eps.push_back(res->finish);
         return res;
     }
 
@@ -199,7 +202,7 @@ namespace dfa {
 
 const int MAXN = 40100, INF = 1e9;
 int dp[2][MAXN];
-int dplink[2][MAXN];
+int dplink[2][MAXN]; 
 bool _used[MAXN];
 
 namespace graph {
@@ -385,7 +388,7 @@ namespace graph {
 };
 
 void topsort(graph::graph g, int v, vector<int> &res) {
-    if(_used[v]) return;
+    if (_used[v]) return;
     _used[v] = 1;
     for (auto &j : g.g[v].e)
         topsort(g, j, res);
@@ -398,7 +401,6 @@ signed main() {
 
     freopen("expression.in", "r", stdin);
     freopen("expression.out", "w", stdout);
-
 
     string s, t;
     cin >> s >> t;
@@ -418,10 +420,10 @@ signed main() {
 
 
     vector<int> _topsort;
-    for(int i = 0; i < condg.n; i++)
-        if(!_used[i])
+    for (int i = 0; i < condg.n; i++)
+        if (!_used[i])
             topsort(condg, i, _topsort);
-        
+
     for (int i = 0; i < condg.n; i++) {
         dp[0][i] = dp[1][i] = dfinish.dist[i];
         dplink[0][i] = dplink[1][i] = i;
